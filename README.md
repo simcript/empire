@@ -35,7 +35,10 @@ empire/
 │           ├── GameGrid.vue
 │           ├── GameCard.vue
 │           ├── FavoritesView.vue
-│           └── SettingsView.vue
+│           ├── SettingsView.vue
+│           └── ProgramsView.vue
+├── services/
+│   └── windows-programs.js   # Installed-program scan helper
 └── assets/                 # Default assets
 ```
 
@@ -75,6 +78,12 @@ Connect an Xbox/DirectInput-compatible gamepad and use:
 - **D-Pad / Left Stick**: Navigate through the grid (sensitivity is adjustable in Settings)
 - **A Button**: Launch the highlighted game
 - **B Button**: Return to the previous screen (e.g., from Favorites/Settings back to Library)
+
+## All Programs Picker
+
+- Use the **All Programs** sidebar section to scan Windows uninstall registries and list every installed desktop app.
+- Filter instantly via the search bar, then click **Add to Library** to persist the app under the unified “external” platform (stored with `electron-store`).
+- Add portable tools via **Add Portable App** → pick any `.exe`, and Mag will track it alongside other games.
 
 ## Refreshing Libraries & Settings
 

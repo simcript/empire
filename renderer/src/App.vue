@@ -26,6 +26,10 @@
         @refresh="handleRefresh"
         @update-setting="handleSettingUpdate"
       />
+      <ProgramsView
+        v-else-if="activeSection === 'programs'"
+        @added="handleProgramsUpdated"
+      />
     </main>
   </div>
 </template>
@@ -36,6 +40,7 @@ import Sidebar from './components/Sidebar.vue';
 import GameGrid from './components/GameGrid.vue';
 import FavoritesView from './components/FavoritesView.vue';
 import SettingsView from './components/SettingsView.vue';
+import ProgramsView from './components/ProgramsView.vue';
 
 const activeSection = ref('library');
 const games = ref([]);
@@ -155,6 +160,10 @@ function handleControllerBack() {
   } else if (activeSection.value !== 'library') {
     activeSection.value = 'library';
   }
+}
+
+function handleProgramsUpdated() {
+  loadGames();
 }
 </script>
 
