@@ -1,9 +1,12 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
 import Store from 'electron-store';
 import { listGames } from './services/game-scanner.js';
+import { listInstalledPrograms, deriveExecutablePath } from './services/windows-programs.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
+import crypto from 'crypto';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +17,7 @@ const store = new Store({
     lastSelectedLibraryFolders: [],
     scanOnStartup: true,
     controllerSensitivity: 0.5,
+    externalGames: [],
   },
 });
 const appRoot = path.resolve(__dirname, '..', '..');
@@ -25,6 +29,7 @@ let mainWindow;
 let cachedGames = [];
 let lastScanTimestamp = null;
 let currentScanPromise = null;
+let cachedExternalGames = store.get('externalGames', []);
 
 function deriveLibraryFolders(games) {
   const folders = new Set();
@@ -74,7 +79,7 @@ async function getGamesFromCache() {
     await currentScanPromise;
   }
 
-  return cachedGames;
+  return [...cachedGames, ...cachedExternalGames];
 }
 
 function createWindow() {
@@ -159,7 +164,8 @@ ipcMain.handle('get-games', async () => {
 ipcMain.handle('refresh-games', async () => {
   try {
     const games = await refreshGameCache(true);
-    return { success: true, games, lastScanTimestamp };
+    const combined = [...games, ...cachedExternalGames];
+    return { success: true, games: combined, lastScanTimestamp };
   } catch (error) {
     console.error('Error refreshing games:', error);
     return { success: false, error: error.message, games: [] };
@@ -240,4 +246,129 @@ ipcMain.handle('set-setting', async (event, key, value) => {
   }
 
   return { success: true, settings: store.store };
+});
+
+ipcMain.handle('get-installed-programs', async () => {
+  try {
+    const programs = await listInstalledPrograms();
+    return { success: true, programs };
+  } catch (error) {
+    console.error('Failed to enumerate installed programs:', error);
+    return { success: false, error: error.message, programs: [] };
+  }
+});
+
+function loadExternalGames() {
+  const games = store.get('externalGames', []);
+  return Array.isArray(games) ? games : [];
+}
+
+function saveExternalGames(games) {
+  cachedExternalGames = games;
+  store.set('externalGames', games);
+}
+
+function buildExternalGameId(seed) {
+  const hash = crypto.createHash('sha1').update(seed).digest('hex');
+  return `external_${hash}`;
+}
+
+function normalizeExternalPayload(data = {}) {
+  return {
+    title: data.name?.trim() || data.title?.trim() || 'External Program',
+    installLocation: data.installLocation || null,
+    displayIcon: data.displayIcon || null,
+    executablePath: data.executablePath || null,
+  };
+}
+
+function createExternalGameEntry(data) {
+  const payload = normalizeExternalPayload(data);
+  const executablePath =
+    payload.executablePath ||
+    deriveExecutablePath(payload.displayIcon, payload.installLocation) ||
+    payload.installLocation;
+
+  const idSeed = executablePath || payload.title + Date.now().toString();
+  const id = buildExternalGameId(idSeed);
+
+  return {
+    id,
+    title: payload.title,
+    platform: 'external',
+    installLocation: payload.installLocation || (executablePath ? path.dirname(executablePath) : null),
+    executablePath: executablePath || null,
+    coverPath: payload.displayIcon || null,
+    launchCommand: executablePath || payload.installLocation || null,
+  };
+}
+
+function upsertExternalGame(entry) {
+  const games = loadExternalGames();
+  const duplicateIndex = games.findIndex((game) => {
+    if (game.executablePath && entry.executablePath) {
+      return game.executablePath.toLowerCase() === entry.executablePath.toLowerCase();
+    }
+    if (game.installLocation && entry.installLocation) {
+      return game.installLocation.toLowerCase() === entry.installLocation.toLowerCase();
+    }
+    return false;
+  });
+
+  if (duplicateIndex > -1) {
+    games[duplicateIndex] = { ...games[duplicateIndex], ...entry };
+    saveExternalGames(games);
+    return games[duplicateIndex];
+  }
+
+  const updated = [...games, entry];
+  saveExternalGames(updated);
+  return entry;
+}
+
+ipcMain.handle('add-external-program', async (event, programData) => {
+  try {
+    const entry = createExternalGameEntry(programData);
+    const saved = upsertExternalGame(entry);
+    return { success: true, game: saved };
+  } catch (error) {
+    console.error('Failed to add external program:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('select-portable-executable', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Select Portable Application',
+    filters: [{ name: 'Executable', extensions: ['exe'] }],
+    properties: ['openFile'],
+  });
+
+  if (result.canceled || !result.filePaths.length) {
+    return { canceled: true };
+  }
+
+  return { canceled: false, filePath: result.filePaths[0] };
+});
+
+ipcMain.handle('add-external-executable', async (event, filePath) => {
+  try {
+    if (!filePath || !filePath.toLowerCase().endsWith('.exe') || !existsSync(filePath)) {
+      throw new Error('Executable path is invalid.');
+    }
+
+    const title = path.basename(filePath, path.extname(filePath));
+    const installLocation = path.dirname(filePath);
+    const entry = createExternalGameEntry({
+      name: title,
+      installLocation,
+      executablePath: filePath,
+      displayIcon: filePath,
+    });
+    const saved = upsertExternalGame(entry);
+    return { success: true, game: saved };
+  } catch (error) {
+    console.error('Failed to add portable executable:', error);
+    return { success: false, error: error.message };
+  }
 });

@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
   quitApp: () => ipcRenderer.send('quit-app'),
+  getInstalledPrograms: () => ipcRenderer.invoke('get-installed-programs'),
+  addExternalProgram: (program) => ipcRenderer.invoke('add-external-program', program),
+  pickPortableExecutable: () => ipcRenderer.invoke('select-portable-executable'),
+  addExternalExecutable: (filePath) => ipcRenderer.invoke('add-external-executable', filePath),
 });
 
 
