@@ -141,6 +141,10 @@ app.on('window-all-closed', () => {
   }
 });
 
+ipcMain.on('quit-app', () => {
+  app.quit();
+});
+
 // IPC Handlers
 ipcMain.handle('get-games', async () => {
   try {

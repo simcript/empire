@@ -138,6 +138,10 @@ async function handleSettingUpdate(payload) {
 }
 
 function handleSectionChange(section) {
+  if (section === 'exit') {
+    window.electronAPI?.quitApp?.();
+    return;
+  }
   if (section !== activeSection.value) {
     sectionHistory.value.push(activeSection.value);
     activeSection.value = section;

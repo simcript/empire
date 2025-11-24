@@ -40,6 +40,7 @@ const sections = [
   { id: 'library', label: 'Library', icon: '📚' },
   { id: 'favorites', label: 'Favorites', icon: '⭐' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
+  { id: 'exit', label: 'Exit', icon: '🚪' },
 ];
 </script>
 
