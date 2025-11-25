@@ -2,7 +2,7 @@
   <div class="h-full overflow-hidden flex flex-col bg-slate-900 text-slate-200">
     <div class="p-8 pb-4 flex flex-col gap-4">
       <div class="flex flex-col gap-2">
-        <h2 class="text-3xl font-bold text-white">All Programs</h2>
+        <h2 class="text-3xl font-bold text-white">All Programs <span class="text-sm text-slate-400">{{programs.length}}</span></h2>
         <p class="text-slate-400">
           Browse installed applications and add them to your library.
         </p>
@@ -56,8 +56,8 @@
               class="w-14 h-14 rounded-xl bg-slate-700 flex items-center justify-center overflow-hidden"
             >
               <img
-                v-if="program.displayIcon"
-                :src="program.displayIcon"
+                v-if="program.iconDataUrl"
+                :src="program.iconDataUrl"
                 :alt="program.name"
                 class="w-full h-full object-cover"
               />
