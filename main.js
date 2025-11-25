@@ -30,6 +30,31 @@ let cachedGames = [];
 let lastScanTimestamp = null;
 let currentScanPromise = null;
 let cachedExternalGames = store.get('externalGames', []);
+// ---------------------- INSTALLED PROGRAMS CACHE ----------------------
+const programsStore = new Store({
+  name: 'installed-programs-cache',
+  cwd: 'cache',
+});
+
+const PROGRAMS_CACHE_KEY = 'programs';
+const PROGRAMS_TTL = 1000 * 60 * 15; // 15 دقیقه
+
+function loadProgramsCache() {
+  const cache = programsStore.get(PROGRAMS_CACHE_KEY);
+  if (!cache) return null;
+
+  const expired = Date.now() - cache.timestamp > PROGRAMS_TTL;
+  if (expired) return null;
+
+  return cache.data;
+}
+
+function saveProgramsCache(data) {
+  programsStore.set(PROGRAMS_CACHE_KEY, {
+    timestamp: Date.now(),
+    data,
+  });
+}
 
 function deriveLibraryFolders(games) {
   const folders = new Set();
@@ -250,11 +275,43 @@ ipcMain.handle('set-setting', async (event, key, value) => {
 
 ipcMain.handle('get-installed-programs', async () => {
   try {
+    // 1) Try cache
+    const cached = loadProgramsCache();
+    if (cached) {
+      return {
+        success: true,
+        programs: cached,
+        cached: true,
+      };
+    }
+
+    // 2) Read fresh
     const programs = await listInstalledPrograms();
-    return { success: true, programs };
+
+    // 3) Save cache
+    saveProgramsCache(programs);
+
+    return {
+      success: true,
+      programs,
+      cached: false,
+    };
+
   } catch (error) {
     console.error('Failed to enumerate installed programs:', error);
     return { success: false, error: error.message, programs: [] };
+  }
+});
+
+ipcMain.handle('refresh-installed-programs', async () => {
+  try {
+    const programs = await listInstalledPrograms();
+
+    saveProgramsCache(programs);
+
+    return { success: true, programs };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 
