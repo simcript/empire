@@ -105,6 +105,7 @@ import { ref, computed, onMounted } from 'vue';
 const emit = defineEmits(['added']);
 
 const programs = ref([]);
+const games = ref([]);
 const loading = ref(true);
 const search = ref('');
 const addingId = ref(null);
@@ -131,6 +132,7 @@ async function reloadPrograms() {
     } else {
       console.error(result?.error || 'Failed to load programs');
     }
+    loadGames();
   } catch (error) {
     console.error('Failed to load installed programs:', error);
   } finally {
@@ -138,21 +140,41 @@ async function reloadPrograms() {
   }
 }
 
-async function handleAdd(program) {
-  addingId.value = program.id;
+async function loadGames() {
   try {
-    const result = await window.electronAPI.addExternalProgram(program);
-    if (!result?.success) {
-      throw new Error(result?.error || 'Failed to add program');
+    const result = await window.electronAPI.getGames();
+    if (result.success) {
+      games.value = result.games;
     }
-    emit('added');
   } catch (error) {
-    console.error('Failed to add program:', error);
-    alert(error.message);
-  } finally {
-    addingId.value = null;
+    console.error('Error loading games:', error);
   }
 }
+
+async function handleAdd(program) {
+  try {
+    const payload = {
+      name: program.name,
+      installLocation: program.installLocation,
+      displayIcon: program.displayIcon,
+      executablePath: program.executablePath || program.installLocation,
+    };
+
+    const res = await window.electronAPI.addExternalProgram(payload);
+
+    if (!res.success) throw new Error(res.error);
+
+    const index = games.value.findIndex(g => g.id === res.game.id);
+    if (index !== -1) {
+      games.value[index] = res.game;
+    } else {
+      games.value.push(res.game);
+    }
+  } catch (error) {
+    console.error("Failed to add program:", error);
+  }
+}
+
 
 async function handlePortableAdd() {
   portableLoading.value = true;

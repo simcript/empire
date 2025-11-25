@@ -277,10 +277,26 @@ function upsertExternalGame(entry) {
   const updated = [...games, entry]; saveExternalGames(updated); return entry;
 }
 
-ipcMain.handle('add-external-program', async (event, programData) => {
-  try { const entry = createExternalGameEntry(programData); const saved = upsertExternalGame(entry); return { success: true, game: saved }; }
-  catch(error){ console.error('Failed to add external program:', error); return { success: false, error: error.message }; }
+ipcMain.handle('add-external-program', async (event, program) => {
+  try {
+    // فقط فیلدهای ساده و clone-safe
+    const safeProgram = {
+      id: program.id,
+      title: program.name,
+      installLocation: program.installLocation,
+      displayIcon: program.displayIcon,
+      executablePath: program.installLocation || program.displayIcon || null,
+      platform: 'external',
+    };
+
+    const saved = upsertExternalGame(safeProgram);
+    return { success: true, game: saved };
+  } catch (error) {
+    console.error('Failed to add external program:', error);
+    return { success: false, error: error.message };
+  }
 });
+
 
 ipcMain.handle('select-portable-executable', async () => {
   const result = await dialog.showOpenDialog({ title:'Select Portable Application', filters:[{name:'Executable',extensions:['exe']}], properties:['openFile'] });
