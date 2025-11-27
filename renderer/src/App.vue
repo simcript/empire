@@ -87,7 +87,16 @@ async function loadSettings() {
 
 async function handleLaunch(game) {
   try {
-    const result = await window.electronAPI.launchGame(game);
+    
+    const payload = {
+      platform: game.platform,
+      appId: game.appId,
+      launchCommand: game.launchCommand,
+      executablePath: game.executablePath,
+      installLocation: game.installLocation,
+      title: game.title || game.name,
+    };
+    const result = await window.electronAPI.launchGame(payload);
     if (!result.success) {
       alert(`Failed to launch game: ${result.error}`);
     }

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import crypto from 'crypto';
 import { existsSync } from 'fs';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -176,27 +177,60 @@ ipcMain.handle('refresh-games', async () => {
 
 ipcMain.handle('launch-game', async (event, game) => {
   try {
+    if (!game || typeof game !== 'object') throw new Error('Invalid game object');
+
     switch (game.platform) {
       case 'steam':
         if (!game.appId) throw new Error('Missing Steam appId');
         await shell.openExternal(`steam://run/${game.appId}`);
         break;
+
       case 'epic':
-        if (!game.launchCommand) throw new Error('Missing Epic executable path');
-        spawn(game.launchCommand, [], { detached: true, stdio: 'ignore', shell: true, cwd: game.installLocation ?? undefined }).unref();
-        break;
       case 'gog':
-        if (!game.launchCommand) throw new Error('Missing GOG launch command');
-        spawn(game.launchCommand, [], { detached: true, stdio: 'ignore', shell: true, cwd: game.installLocation }).unref();
+        {
+          const exe = game.launchCommand || game.executablePath;
+          if (!exe) throw new Error('Missing launchCommand / executablePath');
+          spawn(exe, [], {
+            detached: true,
+            stdio: 'ignore',
+            shell: true,
+            cwd: game.installLocation || path.dirname(exe),
+          }).unref();
+        }
         break;
-      default: throw new Error(`Unknown platform: ${game.platform}`);
+
+      case 'external':
+        {
+          let execPath = game.executablePath || game.installLocation;
+          if (!execPath) throw new Error('Missing executable path');
+
+          if (fs.existsSync(execPath) && fs.lstatSync(execPath).isDirectory()) {
+            const files = fs.readdirSync(execPath);
+            const exeFile = files.find(f => f.toLowerCase().endsWith('.exe'));
+            if (!exeFile) throw new Error('No .exe found in folder: ' + execPath);
+            execPath = path.join(execPath, exeFile);
+          }
+
+          spawn(execPath, [], {
+            detached: true,
+            stdio: 'ignore',
+            shell: true,
+            cwd: path.dirname(execPath),
+          }).unref();
+        }
+        break;
+
+      default:
+        throw new Error(`Unknown platform: ${game.platform}`);
     }
+
     return { success: true };
-  } catch (error) {
-    console.error('Error launching game:', error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    console.error('Error launching game:', err);
+    return { success: false, error: err.message };
   }
 });
+
 
 ipcMain.handle('get-settings', async () => store.store);
 ipcMain.handle('set-setting', async (event, key, value) => {

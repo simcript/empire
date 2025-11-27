@@ -52,11 +52,7 @@
   ⭐
 </button>
 
-
-
-
   <button
-    @click.stop="$emit('play', game.id)"
     class="flex-1 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
     
     @click="$emit('launch', game)"
