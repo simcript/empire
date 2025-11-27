@@ -10,6 +10,7 @@
         :games="games"
         :favorites="favorites"
         :controller-sensitivity="settings.controllerSensitivity"
+        @refresh="handleRefresh"
         @launch="handleLaunch"
         @toggle-favorite="handleToggleFavorite"
         @controller-back="handleControllerBack"

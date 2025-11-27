@@ -48,8 +48,20 @@ const emit = defineEmits(['launch', 'toggle-favorite', 'controller-back']);
 const gridRef = ref(null);
 const selectedIndex = ref(0);
 const columns = ref(6);
+const refreshing = ref(false);
 const NAVIGATION_COOLDOWN_MS = 160;
 let lastNavigationTime = 0;
+
+
+onMounted(async () => {
+  refreshing.value = true;
+  try {
+    emit('refresh');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } finally {
+    refreshing.value = false;
+  }
+})
 
 function selectGame(index) {
   selectedIndex.value = index;
