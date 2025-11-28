@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, Menu } from 'electron'
 import Store from 'electron-store'
 import { listGames } from './services/game-scanner.js'
 import { listInstalledPrograms, deriveExecutablePath } from './services/windows-programs.js'
@@ -119,6 +119,7 @@ function createWindow() {
     autoHideMenuBar: true,
     menuBarVisible: false,
   })
+  Menu.setApplicationMenu(null)
 
   if (isDev) mainWindow.webContents.openDevTools()
 

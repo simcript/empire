@@ -1,115 +1,83 @@
-# Empire - Game Launcher
+# Empire 🎮
 
-A modern Windows game launcher application built with Electron Forge and Vue 3 that automatically scans and displays games from Steam, Epic Games Store, and GOG Galaxy.
+**Empire** — a Windows game and application launcher (Electron + Vue + Vite).
+It allows scanning installed games and programs, adding them to the library, launching and managing them.
 
-## Features
+---
 
-- **Multi-Platform Support**: Automatically detects games from:
-  - Steam (via `libraryfolders.vdf`)
-  - Epic Games (via manifest files)
-  - GOG Galaxy (via database)
-- **Beautiful UI**: Modern Vue 3 interface with TailwindCSS
-- **Gamepad Support**: Navigate and launch games using a controller (D-pad/left stick, A launches, B backs out)
-- **Favorites System**: Mark games as favorites for quick access
-- **Auto-Generated Placeholders**: Missing cover art is automatically replaced with generated SVG placeholders
+## ⚙️ Features
 
-## Project Structure
+* Auto-scan Windows registry for installed programs ✅
+* Add custom programs (external executables) to the library ✅
+* List of games/programs with icons, install paths, and details ✅
+* Launch games or apps (Steam / Epic / GOG / external) from the launcher ✅
+* Supports Windows 64-bit and WOW6432Node registry ✅
+* UI with Vue + Vite + Tailwind CSS ✅
 
-```
-empire/
-├── main.js                 # Electron main process
-├── preload.js              # Preload script for IPC
-├── services/               # Game scanner services
-│   ├── game-scanner.js     # Main scanner orchestrator
-│   ├── steam-scanner.js    # Steam game detection
-│   ├── epic-scanner.js     # Epic Games detection
-│   └── gog-scanner.js      # GOG Galaxy detection
-├── renderer/               # Vue.js frontend
-│   ├── index.html
-│   └── src/
-│       ├── main.js
-│       ├── App.vue
-│       ├── style.css
-│       └── components/
-│           ├── Sidebar.vue
-│           ├── GameGrid.vue
-│           ├── GameCard.vue
-│           ├── FavoritesView.vue
-│           ├── SettingsView.vue
-│           └── ProgramsView.vue
-├── services/
-│   └── windows-programs.js   # Installed-program scan helper
-└── assets/                 # Default assets
-```
+---
 
-## Getting Started
-
-1. Install dependencies
-   ```bash
-   npm install
-   ```
-2. Start the live-reloading Electron app (Electron Forge + Vite)
-   ```bash
-   npm run dev
-   ```
-3. Build distributables / installers
-   ```bash
-   npm run build    # electron-forge make
-   npm run package  # optional unpackaged app bundle
-   ```
-
-## Testing & Checks
-
-A lightweight smoke test validates the scanner contract:
+## 🧑‍💻 Quick Start — Setup for Development
 
 ```bash
-npm test
+git clone https://github.com/simcript/empire.git
+cd empire
+npm install
+npm run dev       # Development mode (Electron + Vite)
 ```
 
-## Game Launch Methods
+### Build (for end-users / Windows installer)
 
-- **Steam**: Uses `steam://run/<appId>` protocol
-- **Epic Games**: Launches executable from manifest `InstallLocation`
-- **GOG**: Executes `launchCommand` from database entry
+```bash
+npm run make      # Output in `out/` folder
+```
 
-## Controller Support
+> ⚠️ If you see "Authors is required" or similar during `make`, make sure the `author` field in `package.json` is set.
 
-Connect an Xbox/DirectInput-compatible gamepad and use:
+---
 
-- **D-Pad / Left Stick**: Navigate through the grid (sensitivity is adjustable in Settings)
-- **A Button**: Launch the highlighted game
-- **B Button**: Return to the previous screen (e.g., from Favorites/Settings back to Library)
+## 🧪 Project Architecture
 
-## All Programs Picker
+* `main.js` — Electron main process (window creation, IPC, launch, scan)
+* `renderer/` — Vue + Vite frontend
+* `services/windows-programs.js` — registry scan + program extraction
+* `services/game-scanner.js` — scan library/game folders
+* Config & store with `electron-store` for caching and settings
 
-- Use the **All Programs** sidebar section to scan Windows uninstall registries and list every installed desktop app.
-- Filter instantly via the search bar, then click **Add to Library** to persist the app under the unified “external” platform (stored with `electron-store`).
-- Add portable tools via **Add Portable App** → pick any `.exe`, and Mag will track it alongside other games.
+---
 
-## Refreshing Libraries & Settings
+## 🚀 Usage
 
-- Mag automatically refreshes Steam, Epic, and GOG libraries on startup (toggle in Settings).
-- Trigger a manual scan from **Settings → Refresh Game Library Now**.
-- Favorites, controller sensitivity, scan-on-startup, and the last detected library folders are persisted with `electron-store` at:
-  - Windows: `%APPDATA%/Empire/config.json`
-  - (Electron automatically resolves the correct per-OS userData directory.)
+1. Run the launcher → Installed programs/games will appear
+2. Go to "Programs" tab → Add programs to library with "Add to Library" button
+3. Go to "Library / Games" tab → Launch games with "Play" button
+4. Some external apps may need executable path adjustment
 
-## Technologies
+---
 
-- **Electron**: Desktop application framework
-- **Electron Forge**: Build and packaging tool
-- **Vue 3**: Frontend framework (Composition API)
-- **Vite**: Build tool for Vue
-- **TailwindCSS**: Utility-first CSS framework
-- **electron-store**: Persistent settings storage
-- **better-sqlite3**: SQLite database access for GOG
+## 🧑‍🤝‍🧑 Contributing
 
-## Requirements
+Thanks for wanting to contribute 🙏
 
-- Windows 10/11
-- Node.js 18+
-- Steam, Epic Games Launcher, or GOG Galaxy installed (optional)
+* Issues and Pull Requests are welcome
+* Please lint/format your code before PR:
 
-## License
+```bash
+npm run lint:fix
+```
 
-MIT
+* For major changes, discuss in Issues first to align
+
+---
+
+## 📄 License
+
+This project is licensed under **MIT** — see the `LICENSE` file for details.
+
+---
+
+## 💡 Developer Notes
+
+* ESLint + Prettier settings for consistent code in `renderer/`
+* IPC structure between renderer and main for scan / launch / settings
+* Windows support (path, registry, execution)
+* Performance and error handling for stability
