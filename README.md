@@ -31,8 +31,6 @@ npm run dev       # Development mode (Electron + Vite)
 npm run make      # Output in `out/` folder
 ```
 
-> ⚠️ If you see "Authors is required" or similar during `make`, make sure the `author` field in `package.json` is set.
-
 ---
 
 ## 🧪 Project Architecture
