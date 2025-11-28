@@ -1,20 +1,11 @@
-import { defineConfig } from 'vite';
-import { builtinModules } from 'module';
+import { defineConfig } from 'vite'
+import { builtinModules } from 'module'
 
-const externalDeps = [
-  'electron',
-  'electron-store',
-  'electron-squirrel-startup',
-  'better-sqlite3',
-];
+const externalDeps = ['electron', 'electron-store', 'electron-squirrel-startup', 'better-sqlite3']
 
 const external = [
-  ...new Set([
-    ...externalDeps,
-    ...builtinModules,
-    ...builtinModules.map((m) => `node:${m}`),
-  ]),
-];
+  ...new Set([...externalDeps, ...builtinModules, ...builtinModules.map((m) => `node:${m}`)]),
+]
 
 export default defineConfig({
   publicDir: false,
@@ -36,7 +27,4 @@ export default defineConfig({
       },
     },
   },
-});
-
-
-
+})

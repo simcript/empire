@@ -4,16 +4,13 @@
       <h2 class="text-3xl font-bold text-white mb-2">Favorites</h2>
       <p class="text-slate-400">{{ games.length }} favorite games</p>
     </div>
-    
+
     <div v-if="games.length === 0" class="text-center py-16">
       <p class="text-slate-400 text-lg">No favorite games yet</p>
       <p class="text-slate-500 text-sm mt-2">Add games to favorites from the Library</p>
     </div>
-    
-    <div 
-      v-else
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-    >
+
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <GameCard
         v-for="(game, index) in games"
         :key="game.id"
@@ -29,26 +26,23 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
-import GameCard from './GameCard.vue';
+import { defineProps, defineEmits } from 'vue'
+import GameCard from './GameCard.vue'
 
 const props = defineProps({
   games: {
     type: Array,
     default: () => [],
   },
-});
+})
 
-const emit = defineEmits(['launch', 'toggle-favorite']);
+const emit = defineEmits(['launch', 'toggle-favorite'])
 
 function handleLaunch(game) {
-  emit('launch', game);
+  emit('launch', game)
 }
 
 function handleToggleFavorite(gameId) {
-  emit('toggle-favorite', gameId);
+  emit('toggle-favorite', gameId)
 }
 </script>
-
-
-

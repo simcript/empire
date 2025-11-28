@@ -4,7 +4,7 @@
       <h2 class="text-3xl font-bold text-white mb-2">Settings</h2>
       <p class="text-slate-400">Configure Mag to match your library and controller preferences.</p>
     </div>
-    
+
     <div class="max-w-2xl space-y-6">
       <div class="bg-slate-800 rounded-lg p-6 space-y-4">
         <div class="flex items-center justify-between">
@@ -43,7 +43,7 @@
           Last selected library folders are stored securely using electron-store.
         </p>
       </div>
-      
+
       <div class="bg-slate-800 rounded-lg p-6 space-y-4">
         <h3 class="text-xl font-semibold text-white">Controller Sensitivity</h3>
         <p class="text-slate-400 text-sm">
@@ -69,14 +69,13 @@
           <li>B Button: Go back to the previous view</li>
         </ul>
       </div>
-      
+
       <div class="bg-slate-800 rounded-lg p-6">
         <h3 class="text-xl font-semibold text-white mb-4">About</h3>
-        <p class="text-slate-400 text-sm">
-          Mag Game Launcher v1.0.0
-        </p>
+        <p class="text-slate-400 text-sm">Mag Game Launcher v1.0.0</p>
         <p class="text-slate-400 text-sm mt-2">
-          A modern Windows launcher that keeps Steam, Epic Games Store, and GOG Galaxy libraries together.
+          A modern Windows launcher that keeps Steam, Epic Games Store, and GOG Galaxy libraries
+          together.
         </p>
       </div>
     </div>
@@ -84,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from 'vue'
 
 const props = defineProps({
   settings: {
@@ -94,50 +93,47 @@ const props = defineProps({
       controllerSensitivity: 0.5,
     }),
   },
-});
+})
 
-const emit = defineEmits(['refresh', 'update-setting']);
+const emit = defineEmits(['refresh', 'update-setting'])
 
-const refreshing = ref(false);
-const localScanOnStartup = ref(props.settings.scanOnStartup ?? true);
-const localControllerSensitivity = ref(props.settings.controllerSensitivity ?? 0.5);
+const refreshing = ref(false)
+const localScanOnStartup = ref(props.settings.scanOnStartup ?? true)
+const localControllerSensitivity = ref(props.settings.controllerSensitivity ?? 0.5)
 
 watch(
   () => props.settings.scanOnStartup,
   (value) => {
-    localScanOnStartup.value = value ?? true;
+    localScanOnStartup.value = value ?? true
   }
-);
+)
 
 watch(
   () => props.settings.controllerSensitivity,
   (value) => {
-    localControllerSensitivity.value = value ?? 0.5;
+    localControllerSensitivity.value = value ?? 0.5
   }
-);
+)
 
 async function handleRefresh() {
-  refreshing.value = true;
+  refreshing.value = true
   try {
-    emit('refresh');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    emit('refresh')
+    await new Promise((resolve) => setTimeout(resolve, 500))
   } finally {
-    refreshing.value = false;
+    refreshing.value = false
   }
 }
 
 function handleScanToggle(event) {
-  const value = event.target.checked;
-  localScanOnStartup.value = value;
-  emit('update-setting', { key: 'scanOnStartup', value });
+  const value = event.target.checked
+  localScanOnStartup.value = value
+  emit('update-setting', { key: 'scanOnStartup', value })
 }
 
 function handleSensitivityChange(event) {
-  const value = Number(event.target.value);
-  localControllerSensitivity.value = value;
-  emit('update-setting', { key: 'controllerSensitivity', value });
+  const value = Number(event.target.value)
+  localControllerSensitivity.value = value
+  emit('update-setting', { key: 'controllerSensitivity', value })
 }
 </script>
-
-
-

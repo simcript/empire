@@ -75,6 +75,7 @@ npm test
 ## Controller Support
 
 Connect an Xbox/DirectInput-compatible gamepad and use:
+
 - **D-Pad / Left Stick**: Navigate through the grid (sensitivity is adjustable in Settings)
 - **A Button**: Launch the highlighted game
 - **B Button**: Return to the previous screen (e.g., from Favorites/Settings back to Library)
@@ -112,6 +113,3 @@ Connect an Xbox/DirectInput-compatible gamepad and use:
 ## License
 
 MIT
-
-
-

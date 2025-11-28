@@ -2,10 +2,10 @@
   <div class="h-full overflow-hidden flex flex-col bg-slate-900 text-slate-200">
     <div class="p-8 pb-4 flex flex-col gap-4">
       <div class="flex flex-col gap-2">
-        <h2 class="text-3xl font-bold text-white">All Programs <span class="text-sm text-slate-400">{{programs.length}}</span></h2>
-        <p class="text-slate-400">
-          Browse installed applications and add them to your library.
-        </p>
+        <h2 class="text-3xl font-bold text-white">
+          All Programs <span class="text-sm text-slate-400">{{ programs.length }}</span>
+        </h2>
+        <p class="text-slate-400">Browse installed applications and add them to your library.</p>
       </div>
       <div class="flex flex-wrap gap-4 items-center">
         <div class="flex-1 min-w-[240px]">
@@ -42,10 +42,7 @@
         No programs found matching your search.
       </div>
 
-      <div
-        v-else
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-      >
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div
           v-for="program in filteredPrograms"
           :key="program.id"
@@ -81,9 +78,7 @@
             <p v-if="program.installLocation" class="truncate">
               {{ program.installLocation }}
             </p>
-            <p v-if="program.estimatedSize">
-              Size: {{ formatSize(program.estimatedSize) }}
-            </p>
+            <p v-if="program.estimatedSize">Size: {{ formatSize(program.estimatedSize) }}</p>
           </div>
 
           <button
@@ -100,54 +95,54 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue'
 
-const emit = defineEmits(['added']);
+const emit = defineEmits(['added'])
 
-const programs = ref([]);
-const games = ref([]);
-const loading = ref(true);
-const search = ref('');
-const addingId = ref(null);
-const portableLoading = ref(false);
+const programs = ref([])
+const games = ref([])
+const loading = ref(true)
+const search = ref('')
+const addingId = ref(null)
+const portableLoading = ref(false)
 
 const filteredPrograms = computed(() => {
-  const term = search.value.trim().toLowerCase();
-  if (!term) return programs.value;
+  const term = search.value.trim().toLowerCase()
+  if (!term) return programs.value
   return programs.value.filter((program) => {
     return (
       program.name?.toLowerCase().includes(term) ||
       program.publisher?.toLowerCase().includes(term) ||
       program.installLocation?.toLowerCase().includes(term)
-    );
-  });
-});
+    )
+  })
+})
 
 async function reloadPrograms() {
-  loading.value = true;
+  loading.value = true
   try {
-    const result = await window.electronAPI.getInstalledPrograms();
+    const result = await window.electronAPI.getInstalledPrograms()
     if (result?.success) {
-      programs.value = result.programs || [];
+      programs.value = result.programs || []
     } else {
-      console.error(result?.error || 'Failed to load programs');
+      console.error(result?.error || 'Failed to load programs')
     }
-    loadGames();
+    loadGames()
   } catch (error) {
-    console.error('Failed to load installed programs:', error);
+    console.error('Failed to load installed programs:', error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function loadGames() {
   try {
-    const result = await window.electronAPI.getGames();
+    const result = await window.electronAPI.getGames()
     if (result.success) {
-      games.value = result.games;
+      games.value = result.games
     }
   } catch (error) {
-    console.error('Error loading games:', error);
+    console.error('Error loading games:', error)
   }
 }
 
@@ -158,73 +153,71 @@ async function handleAdd(program) {
       installLocation: program.installLocation,
       displayIcon: program.displayIcon,
       executablePath: program.executablePath || program.installLocation,
-    };
+    }
 
-    const res = await window.electronAPI.addExternalProgram(payload);
+    const res = await window.electronAPI.addExternalProgram(payload)
 
-    if (!res.success) throw new Error(res.error);
+    if (!res.success) throw new Error(res.error)
 
-    const index = games.value.findIndex(g => g.id === res.game.id);
+    const index = games.value.findIndex((g) => g.id === res.game.id)
     if (index !== -1) {
-      games.value[index] = res.game;
+      games.value[index] = res.game
     } else {
-      games.value.push(res.game);
+      games.value.push(res.game)
     }
   } catch (error) {
-    console.error("Failed to add program:", error);
+    console.error('Failed to add program:', error)
   }
 }
 
-
 async function handlePortableAdd() {
-  portableLoading.value = true;
+  portableLoading.value = true
   try {
-    const selection = await window.electronAPI.pickPortableExecutable();
+    const selection = await window.electronAPI.pickPortableExecutable()
     if (selection?.canceled || !selection?.filePath) {
-      return;
+      return
     }
-    const result = await window.electronAPI.addExternalExecutable(selection.filePath);
+    const result = await window.electronAPI.addExternalExecutable(selection.filePath)
     if (!result?.success) {
-      throw new Error(result?.error || 'Failed to add portable app');
+      throw new Error(result?.error || 'Failed to add portable app')
     }
-    emit('added');
+    emit('added')
   } catch (error) {
-    console.error('Failed to add portable executable:', error);
-    alert(error.message);
+    console.error('Failed to add portable executable:', error)
+    alert(error.message)
   } finally {
-    portableLoading.value = false;
+    portableLoading.value = false
   }
 }
 
 function initials(name = '') {
-  const parts = name.split(' ').filter(Boolean);
+  const parts = name.split(' ').filter(Boolean)
   if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
   }
-  return (parts[0]?.[0] || 'A').toUpperCase();
+  return (parts[0]?.[0] || 'A').toUpperCase()
 }
 
 function generatePlaceholder(text = '') {
-  const colors = ['#4338ca', '#be185d', '#0ea5e9', '#16a34a', '#ca8a04', '#7c3aed'];
-  let hash = 0;
+  const colors = ['#4338ca', '#be185d', '#0ea5e9', '#16a34a', '#ca8a04', '#7c3aed']
+  let hash = 0
   for (let i = 0; i < text.length; i += 1) {
-    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    hash = text.charCodeAt(i) + ((hash << 5) - hash)
   }
-  const color = colors[Math.abs(hash) % colors.length];
-  return `linear-gradient(135deg, ${color}, ${color}80)`;
+  const color = colors[Math.abs(hash) % colors.length]
+  return `linear-gradient(135deg, ${color}, ${color}80)`
 }
 
 function formatSize(sizeInKb) {
-  if (!sizeInKb || Number.isNaN(sizeInKb)) return 'Unknown size';
-  const sizeInMb = sizeInKb / 1024;
+  if (!sizeInKb || Number.isNaN(sizeInKb)) return 'Unknown size'
+  const sizeInMb = sizeInKb / 1024
   if (sizeInMb < 1024) {
-    return `${sizeInMb.toFixed(1)} MB`;
+    return `${sizeInMb.toFixed(1)} MB`
   }
-  return `${(sizeInMb / 1024).toFixed(1)} GB`;
+  return `${(sizeInMb / 1024).toFixed(1)} GB`
 }
 
 onMounted(() => {
-  reloadPrograms();
-});
+  reloadPrograms()
+})
 </script>
-

@@ -4,11 +4,8 @@
       <h2 class="text-3xl font-bold text-white mb-2">Game Library</h2>
       <p class="text-slate-400">{{ games.length }} games found</p>
     </div>
-    
-    <div 
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-      ref="gridRef"
-    >
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" ref="gridRef">
       <GameCard
         v-for="(game, index) in games"
         :key="game.id"
@@ -25,8 +22,8 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-import GameCard from './GameCard.vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import GameCard from './GameCard.vue'
 
 const props = defineProps({
   games: {
@@ -41,127 +38,123 @@ const props = defineProps({
     type: Number,
     default: 0.5,
   },
-});
+})
 
-const emit = defineEmits(['launch', 'toggle-favorite', 'controller-back']);
+const emit = defineEmits(['launch', 'toggle-favorite', 'controller-back'])
 
-const gridRef = ref(null);
-const selectedIndex = ref(0);
-const columns = ref(6);
-const refreshing = ref(false);
-const NAVIGATION_COOLDOWN_MS = 160;
-let lastNavigationTime = 0;
-
+const gridRef = ref(null)
+const selectedIndex = ref(0)
+const columns = ref(6)
+const refreshing = ref(false)
+const NAVIGATION_COOLDOWN_MS = 160
+let lastNavigationTime = 0
 
 onMounted(async () => {
-  refreshing.value = true;
+  refreshing.value = true
   try {
-    emit('refresh');
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    emit('refresh')
+    await new Promise((resolve) => setTimeout(resolve, 500))
   } finally {
-    refreshing.value = false;
+    refreshing.value = false
   }
 })
 
 function selectGame(index) {
-  selectedIndex.value = index;
+  selectedIndex.value = index
 }
 
 function handleLaunch(game) {
-  emit('launch', game);
+  emit('launch', game)
 }
 
 function handleToggleFavorite(gameId) {
-  emit('toggle-favorite', gameId);
+  emit('toggle-favorite', gameId)
 }
 
 function updateColumns() {
   if (gridRef.value) {
-    const width = gridRef.value.offsetWidth;
-    if (width < 640) columns.value = 2;
-    else if (width < 768) columns.value = 3;
-    else if (width < 1024) columns.value = 4;
-    else if (width < 1280) columns.value = 5;
-    else columns.value = 6;
+    const width = gridRef.value.offsetWidth
+    if (width < 640) columns.value = 2
+    else if (width < 768) columns.value = 3
+    else if (width < 1024) columns.value = 4
+    else if (width < 1280) columns.value = 5
+    else columns.value = 6
   }
 }
 
 function moveSelection(delta) {
-  if (!props.games.length) return;
-  const nextIndex = Math.min(
-    props.games.length - 1,
-    Math.max(0, selectedIndex.value + delta),
-  );
+  if (!props.games.length) return
+  const nextIndex = Math.min(props.games.length - 1, Math.max(0, selectedIndex.value + delta))
   if (nextIndex !== selectedIndex.value) {
-    selectedIndex.value = nextIndex;
-    scrollToSelected();
+    selectedIndex.value = nextIndex
+    scrollToSelected()
   }
 }
 
 function moveVertical(deltaRows) {
-  moveSelection(deltaRows * columns.value);
+  moveSelection(deltaRows * columns.value)
 }
 
-let rafId = null;
+let rafId = null
 const lastButtonStates = {
   buttonA: false,
   buttonB: false,
-};
+}
 
 function processGamepadInput(gamepad) {
-  const deadzone = Math.min(1, Math.max(0.1, props.controllerSensitivity || 0.5));
-  const axesX = gamepad.axes[0] || 0;
-  const axesY = gamepad.axes[1] || 0;
+  const deadzone = Math.min(1, Math.max(0.1, props.controllerSensitivity || 0.5))
+  const axesX = gamepad.axes[0] || 0
+  const axesY = gamepad.axes[1] || 0
 
-  const dpadLeft = gamepad.buttons[14]?.pressed;
-  const dpadRight = gamepad.buttons[15]?.pressed;
-  const dpadUp = gamepad.buttons[12]?.pressed;
-  const dpadDown = gamepad.buttons[13]?.pressed;
+  const dpadLeft = gamepad.buttons[14]?.pressed
+  const dpadRight = gamepad.buttons[15]?.pressed
+  const dpadUp = gamepad.buttons[12]?.pressed
+  const dpadDown = gamepad.buttons[13]?.pressed
 
-  const now = performance.now();
+  const now = performance.now()
   if (now - lastNavigationTime > NAVIGATION_COOLDOWN_MS) {
     if (dpadLeft || axesX < -deadzone) {
-      moveSelection(-1);
-      lastNavigationTime = now;
+      moveSelection(-1)
+      lastNavigationTime = now
     } else if (dpadRight || axesX > deadzone) {
-      moveSelection(1);
-      lastNavigationTime = now;
+      moveSelection(1)
+      lastNavigationTime = now
     } else if (dpadUp || axesY < -deadzone) {
-      moveVertical(-1);
-      lastNavigationTime = now;
+      moveVertical(-1)
+      lastNavigationTime = now
     } else if (dpadDown || axesY > deadzone) {
-      moveVertical(1);
-      lastNavigationTime = now;
+      moveVertical(1)
+      lastNavigationTime = now
     }
   }
 
-  const buttonAPressed = Boolean(gamepad.buttons[0]?.pressed);
+  const buttonAPressed = Boolean(gamepad.buttons[0]?.pressed)
   if (buttonAPressed && !lastButtonStates.buttonA && props.games[selectedIndex.value]) {
-    handleLaunch(props.games[selectedIndex.value]);
+    handleLaunch(props.games[selectedIndex.value])
   }
-  lastButtonStates.buttonA = buttonAPressed;
+  lastButtonStates.buttonA = buttonAPressed
 
-  const buttonBPressed = Boolean(gamepad.buttons[1]?.pressed);
+  const buttonBPressed = Boolean(gamepad.buttons[1]?.pressed)
   if (buttonBPressed && !lastButtonStates.buttonB) {
-    emit('controller-back');
+    emit('controller-back')
   }
-  lastButtonStates.buttonB = buttonBPressed;
+  lastButtonStates.buttonB = buttonBPressed
 }
 
 function pollGamepads() {
-  const gamepads = navigator.getGamepads?.();
+  const gamepads = navigator.getGamepads?.()
   if (gamepads && gamepads[0]) {
-    processGamepadInput(gamepads[0]);
+    processGamepadInput(gamepads[0])
   }
-  rafId = requestAnimationFrame(pollGamepads);
+  rafId = requestAnimationFrame(pollGamepads)
 }
 
 function scrollToSelected() {
   if (gridRef.value) {
-    const cards = gridRef.value.querySelectorAll('[data-game-index]');
-    const selectedCard = cards[selectedIndex.value];
+    const cards = gridRef.value.querySelectorAll('[data-game-index]')
+    const selectedCard = cards[selectedIndex.value]
     if (selectedCard) {
-      selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
   }
 }
@@ -170,22 +163,21 @@ watch(
   () => props.games.length,
   () => {
     if (selectedIndex.value > props.games.length - 1) {
-      selectedIndex.value = Math.max(0, props.games.length - 1);
+      selectedIndex.value = Math.max(0, props.games.length - 1)
     }
   }
-);
+)
 
 onMounted(() => {
-  updateColumns();
-  window.addEventListener('resize', updateColumns);
-  rafId = requestAnimationFrame(pollGamepads);
-});
+  updateColumns()
+  window.addEventListener('resize', updateColumns)
+  rafId = requestAnimationFrame(pollGamepads)
+})
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateColumns);
+  window.removeEventListener('resize', updateColumns)
   if (rafId) {
-    cancelAnimationFrame(rafId);
+    cancelAnimationFrame(rafId)
   }
-});
+})
 </script>
-

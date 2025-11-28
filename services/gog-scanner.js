@@ -1,17 +1,17 @@
-import { existsSync, readdirSync, readFileSync } from 'fs';
-import os from 'os';
-import { join } from 'path';
+import { existsSync, readdirSync } from 'fs'
+import os from 'os'
+import { join } from 'path'
 
 const GOG_PATHS = [
   join(os.homedir(), 'AppData', 'Local', 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db'),
   join(os.homedir(), 'AppData', 'Local', 'GOG.com', 'Galaxy', 'storage', 'galaxy.db'),
-];
+]
 
 async function tryBetterSqlite3(dbPath) {
   try {
-    const { Database } = await import('better-sqlite3');
-    const db = new Database(dbPath, { readonly: true });
-    
+    const { Database } = await import('better-sqlite3')
+    const db = new Database(dbPath, { readonly: true })
+
     const query = `
       SELECT 
         g.id,
@@ -21,59 +21,59 @@ async function tryBetterSqlite3(dbPath) {
         g.executable
       FROM InstalledBaseProducts g
       WHERE g.installDirectory IS NOT NULL
-    `;
-    
-    const rows = db.prepare(query).all();
-    db.close();
-    return rows;
+    `
+
+    const rows = db.prepare(query).all()
+    db.close()
+    return rows
   } catch (error) {
-    console.error('Error using better-sqlite3:', error);
-    return null;
+    console.error('Error using better-sqlite3:', error)
+    return null
   }
 }
 
 export async function listGames() {
-  const games = [];
-  
-  let dbPath = null;
+  const games = []
+
+  let dbPath = null
   for (const path of GOG_PATHS) {
     if (existsSync(path)) {
-      dbPath = path;
-      break;
+      dbPath = path
+      break
     }
   }
-  
+
   if (!dbPath) {
-    return games;
+    return games
   }
-  
+
   try {
-    const rows = await tryBetterSqlite3(dbPath);
-    
+    const rows = await tryBetterSqlite3(dbPath)
+
     if (!rows) {
-      return games;
+      return games
     }
-    
+
     for (const row of rows) {
       if (row.installDirectory && existsSync(row.installDirectory)) {
-        let executablePath = null;
-        
+        let executablePath = null
+
         if (row.executable) {
-          executablePath = join(row.installDirectory, row.executable);
+          executablePath = join(row.installDirectory, row.executable)
         } else if (row.launchCommand) {
-          executablePath = row.launchCommand;
+          executablePath = row.launchCommand
         } else {
           try {
-            const files = readdirSync(row.installDirectory);
-            const exeFiles = files.filter(f => f.endsWith('.exe') && !f.includes('uninstall'));
+            const files = readdirSync(row.installDirectory)
+            const exeFiles = files.filter((f) => f.endsWith('.exe') && !f.includes('uninstall'))
             if (exeFiles.length > 0) {
-              executablePath = join(row.installDirectory, exeFiles[0]);
+              executablePath = join(row.installDirectory, exeFiles[0])
             }
           } catch (error) {
-            console.error(`Error finding executable for ${row.title}:`, error);
+            console.error(`Error finding executable for ${row.title}:`, error)
           }
         }
-        
+
         if (executablePath) {
           games.push({
             id: `gog_${row.id}`,
@@ -83,14 +83,13 @@ export async function listGames() {
             installLocation: row.installDirectory,
             launchCommand: row.launchCommand || executablePath,
             coverPath: null,
-          });
+          })
         }
       }
     }
   } catch (error) {
-    console.error('Error scanning GOG games:', error);
+    console.error('Error scanning GOG games:', error)
   }
-  
-  return games;
-}
 
+  return games
+}

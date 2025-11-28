@@ -1,8 +1,9 @@
 {
   "name": "empire",
   "version": "1.0.0",
-  "description": "Windows game launcher application",
+  "description": "A free and open source game launcher",
   "type": "module",
+  "author": "AliA_MehR",
   "main": ".vite/build/main.cjs",
   "scripts": {
     "dev": "electron-forge start",
@@ -11,7 +12,10 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "test": "node ./tests/scanner.smoke.mjs"
+    "test": "node ./tests/scanner.smoke.mjs",
+    "lint": "eslint \"renderer/src/**/*.{js,vue}\"",
+    "lint:fix": "eslint \"renderer/src/**/*.{js,vue}\" --fix",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.2.0",
@@ -22,7 +26,12 @@
     "@vitejs/plugin-vue": "^5.0.0",
     "autoprefixer": "^10.4.16",
     "electron": "^28.0.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-vue": "^10.6.1",
     "postcss": "^8.4.32",
+    "prettier": "^3.7.1",
     "tailwindcss": "^3.4.0",
     "vite": "^5.0.0"
   },

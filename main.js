@@ -1,16 +1,16 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
-import Store from 'electron-store';
-import { listGames } from './services/game-scanner.js';
-import { listInstalledPrograms, deriveExecutablePath } from './services/windows-programs.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
-import crypto from 'crypto';
-import { existsSync } from 'fs';
-import fs from 'fs';
+import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import Store from 'electron-store'
+import { listGames } from './services/game-scanner.js'
+import { listInstalledPrograms, deriveExecutablePath } from './services/windows-programs.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { spawn } from 'child_process'
+import crypto from 'crypto'
+import { existsSync } from 'fs'
+import fs from 'fs'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const store = new Store({
   defaults: {
@@ -20,82 +20,82 @@ const store = new Store({
     controllerSensitivity: 0.5,
     externalGames: [],
   },
-});
+})
 
-const appRoot = path.resolve(__dirname, '..', '..');
-const rendererDistPath = path.join(appRoot, '.vite/renderer/main_window');
-const preloadBundlePath = path.join(__dirname, 'preload.cjs');
-const isDev = !app.isPackaged;
+const appRoot = path.resolve(__dirname, '..', '..')
+const rendererDistPath = path.join(appRoot, '.vite/renderer/main_window')
+const preloadBundlePath = path.join(__dirname, 'preload.cjs')
+const isDev = !app.isPackaged
 
-let mainWindow;
-let cachedGames = [];
-let lastScanTimestamp = null;
-let currentScanPromise = null;
-let cachedExternalGames = store.get('externalGames', []);
+let mainWindow
+let cachedGames = []
+let lastScanTimestamp = null
+let currentScanPromise = null
+let cachedExternalGames = store.get('externalGames', [])
 
 /* -------------------- Installed Programs Cache -------------------- */
-const programsStore = new Store({ name: 'installed-programs-cache', cwd: 'cache' });
-const PROGRAMS_CACHE_KEY = 'programs';
-const PROGRAMS_TTL = 1000 * 60 * 15; // 15 دقیقه
+const programsStore = new Store({ name: 'installed-programs-cache', cwd: 'cache' })
+const PROGRAMS_CACHE_KEY = 'programs'
+const PROGRAMS_TTL = 1000 * 60 * 15 // 15 دقیقه
 
 function loadProgramsCache() {
-  const cache = programsStore.get(PROGRAMS_CACHE_KEY);
-  if (!cache) return null;
-  const expired = Date.now() - cache.timestamp > PROGRAMS_TTL;
-  if (expired) return null;
-  return cache.data;
+  const cache = programsStore.get(PROGRAMS_CACHE_KEY)
+  if (!cache) return null
+  const expired = Date.now() - cache.timestamp > PROGRAMS_TTL
+  if (expired) return null
+  return cache.data
 }
 
 function saveProgramsCache(data) {
-  programsStore.set(PROGRAMS_CACHE_KEY, { timestamp: Date.now(), data });
+  programsStore.set(PROGRAMS_CACHE_KEY, { timestamp: Date.now(), data })
 }
 
 /* -------------------- Game Cache Helpers -------------------- */
 function deriveLibraryFolders(games) {
-  const folders = new Set();
+  const folders = new Set()
   games.forEach((game) => {
     if (game.installLocation) {
-      folders.add(path.dirname(game.installLocation));
+      folders.add(path.dirname(game.installLocation))
     }
-  });
-  return Array.from(folders);
+  })
+  return Array.from(folders)
 }
 
 async function refreshGameCache(force = false) {
-  if (currentScanPromise && !force) return currentScanPromise;
+  if (currentScanPromise && !force) return currentScanPromise
 
   currentScanPromise = (async () => {
-    const games = await listGames();
-    cachedGames = games;
-    lastScanTimestamp = Date.now();
+    const games = await listGames()
+    cachedGames = games
+    lastScanTimestamp = Date.now()
 
-    const folders = deriveLibraryFolders(games);
-    if (folders.length) store.set('lastSelectedLibraryFolders', folders);
+    const folders = deriveLibraryFolders(games)
+    if (folders.length) store.set('lastSelectedLibraryFolders', folders)
 
-    return games;
-  })();
+    return games
+  })()
 
   try {
-    await currentScanPromise;
+    await currentScanPromise
   } finally {
-    currentScanPromise = null;
+    currentScanPromise = null
   }
 
-  return cachedGames;
+  return cachedGames
 }
 
 async function getGamesFromCache() {
   if (cachedGames.length === 0 && !currentScanPromise) {
     try {
-      await refreshGameCache(true);
+      await refreshGameCache(true)
     } catch (error) {
-      console.error('Initial game cache load failed:', error);
+      console.error('Initial game cache load failed:', error)
     }
   } else if (currentScanPromise) {
-    await currentScanPromise;
+    await currentScanPromise
   }
 
-  return [...cachedGames, ...cachedExternalGames];
+  return [...cachedGames, ...cachedExternalGames]
 }
 
 /* -------------------- Electron Window -------------------- */
@@ -118,97 +118,102 @@ function createWindow() {
     maximizable: false,
     autoHideMenuBar: true,
     menuBarVisible: false,
-  });
+  })
 
-  if (isDev) mainWindow.webContents.openDevTools();
+  if (isDev) mainWindow.webContents.openDevTools()
 
   const rendererDevServerURL =
-    (typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined' &&
-      MAIN_WINDOW_VITE_DEV_SERVER_URL) ||
+    (typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined' && MAIN_WINDOW_VITE_DEV_SERVER_URL) ||
     process.env.MAIN_WINDOW_VITE_DEV_SERVER_URL ||
-    (isDev ? 'http://localhost:5173' : undefined);
+    (isDev ? 'http://localhost:5173' : undefined)
 
-  if (isDev && rendererDevServerURL) mainWindow.loadURL(rendererDevServerURL);
-  else mainWindow.loadFile(path.join(rendererDistPath, 'index.html'));
+  if (isDev && rendererDevServerURL) mainWindow.loadURL(rendererDevServerURL)
+  else mainWindow.loadFile(path.join(rendererDistPath, 'index.html'))
 
-  mainWindow.on('closed', () => { mainWindow = null; });
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
 }
 
 /* -------------------- App Ready -------------------- */
 app.whenReady().then(() => {
   if (store.get('scanOnStartup', true)) {
     refreshGameCache(true).catch((error) => {
-      console.error('Startup scan failed:', error);
-    });
+      console.error('Startup scan failed:', error)
+    })
   }
 
-  createWindow();
+  createWindow()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
 
-ipcMain.on('quit-app', () => { app.quit(); });
+ipcMain.on('quit-app', () => {
+  app.quit()
+})
 
 /* -------------------- IPC Handlers -------------------- */
 ipcMain.handle('get-games', async () => {
   try {
-    const games = await getGamesFromCache();
-    return { success: true, games, lastScanTimestamp };
+    const games = await getGamesFromCache()
+    return { success: true, games, lastScanTimestamp }
   } catch (error) {
-    console.error('Error retrieving cached games:', error);
-    return { success: false, error: error.message, games: [] };
+    console.error('Error retrieving cached games:', error)
+    return { success: false, error: error.message, games: [] }
   }
-});
+})
 
 ipcMain.handle('refresh-games', async () => {
   try {
-    const games = await refreshGameCache(true);
-    const combined = [...games, ...cachedExternalGames];
-    return { success: true, games: combined, lastScanTimestamp };
+    const games = await refreshGameCache(true)
+    const combined = [...games, ...cachedExternalGames]
+    return { success: true, games: combined, lastScanTimestamp }
   } catch (error) {
-    console.error('Error refreshing games:', error);
-    return { success: false, error: error.message, games: [] };
+    console.error('Error refreshing games:', error)
+    return { success: false, error: error.message, games: [] }
   }
-});
+})
 
 ipcMain.handle('launch-game', async (event, game) => {
   try {
-    if (!game || typeof game !== 'object') throw new Error('Invalid game object');
+    if (!game || typeof game !== 'object') throw new Error('Invalid game object')
 
     switch (game.platform) {
       case 'steam':
-        if (!game.appId) throw new Error('Missing Steam appId');
-        await shell.openExternal(`steam://run/${game.appId}`);
-        break;
+        if (!game.appId) throw new Error('Missing Steam appId')
+        await shell.openExternal(`steam://run/${game.appId}`)
+        break
 
       case 'epic':
       case 'gog':
         {
-          const exe = game.launchCommand || game.executablePath;
-          if (!exe) throw new Error('Missing launchCommand / executablePath');
+          const exe = game.launchCommand || game.executablePath
+          if (!exe) throw new Error('Missing launchCommand / executablePath')
           spawn(exe, [], {
             detached: true,
             stdio: 'ignore',
             shell: true,
             cwd: game.installLocation || path.dirname(exe),
-          }).unref();
+          }).unref()
         }
-        break;
+        break
 
       case 'external':
         {
-          let execPath = game.executablePath || game.installLocation;
-          if (!execPath) throw new Error('Missing executable path');
+          let execPath = game.executablePath || game.installLocation
+          if (!execPath) throw new Error('Missing executable path')
 
           if (fs.existsSync(execPath) && fs.lstatSync(execPath).isDirectory()) {
-            const files = fs.readdirSync(execPath);
-            const exeFile = files.find(f => f.toLowerCase().endsWith('.exe'));
-            if (!exeFile) throw new Error('No .exe found in folder: ' + execPath);
-            execPath = path.join(execPath, exeFile);
+            const files = fs.readdirSync(execPath)
+            const exeFile = files.find((f) => f.toLowerCase().endsWith('.exe'))
+            if (!exeFile) throw new Error('No .exe found in folder: ' + execPath)
+            execPath = path.join(execPath, exeFile)
           }
 
           spawn(execPath, [], {
@@ -216,99 +221,119 @@ ipcMain.handle('launch-game', async (event, game) => {
             stdio: 'ignore',
             shell: true,
             cwd: path.dirname(execPath),
-          }).unref();
+          }).unref()
         }
-        break;
+        break
 
       default:
-        throw new Error(`Unknown platform: ${game.platform}`);
+        throw new Error(`Unknown platform: ${game.platform}`)
     }
 
-    return { success: true };
+    return { success: true }
   } catch (err) {
-    console.error('Error launching game:', err);
-    return { success: false, error: err.message };
+    console.error('Error launching game:', err)
+    return { success: false, error: err.message }
   }
-});
+})
 
-
-ipcMain.handle('get-settings', async () => store.store);
+ipcMain.handle('get-settings', async () => store.store)
 ipcMain.handle('set-setting', async (event, key, value) => {
-  const allowedKeys = new Set(['favorites','scanOnStartup','controllerSensitivity']);
-  if (!allowedKeys.has(key)) return { success: false, error: `Setting ${key} is not allowed` };
-  if (key === 'favorites') store.set(key, Array.from(new Set(Array.isArray(value)?value:[])));
-  else if (key === 'scanOnStartup') store.set(key, Boolean(value));
+  const allowedKeys = new Set(['favorites', 'scanOnStartup', 'controllerSensitivity'])
+  if (!allowedKeys.has(key)) return { success: false, error: `Setting ${key} is not allowed` }
+  if (key === 'favorites') store.set(key, Array.from(new Set(Array.isArray(value) ? value : [])))
+  else if (key === 'scanOnStartup') store.set(key, Boolean(value))
   else if (key === 'controllerSensitivity') {
-    const num = Number(value);
-    store.set(key, Number.isFinite(num)?Math.min(1,Math.max(0.1,num)):0.5);
+    const num = Number(value)
+    store.set(key, Number.isFinite(num) ? Math.min(1, Math.max(0.1, num)) : 0.5)
   }
-  return { success: true, settings: store.store };
-});
+  return { success: true, settings: store.store }
+})
 
 /* -------------------- Installed Programs IPC -------------------- */
 ipcMain.handle('get-installed-programs', async () => {
   try {
-    const cached = loadProgramsCache();
-    if (cached) return { success: true, programs: cached, cached: true };
+    const cached = loadProgramsCache()
+    if (cached) return { success: true, programs: cached, cached: true }
 
-    const programs = await listInstalledPrograms();
-    saveProgramsCache(programs);
+    const programs = await listInstalledPrograms()
+    saveProgramsCache(programs)
 
-    return { success: true, programs, cached: false };
+    return { success: true, programs, cached: false }
   } catch (error) {
-    console.error('Failed to enumerate installed programs:', error);
-    return { success: false, error: error.message, programs: [] };
+    console.error('Failed to enumerate installed programs:', error)
+    return { success: false, error: error.message, programs: [] }
   }
-});
+})
 
 ipcMain.handle('refresh-installed-programs', async () => {
   try {
-    const programs = await listInstalledPrograms();
-    saveProgramsCache(programs);
-    return { success: true, programs };
+    const programs = await listInstalledPrograms()
+    saveProgramsCache(programs)
+    return { success: true, programs }
   } catch (error) {
-    console.error('Failed to refresh installed programs:', error);
-    return { success: false, error: error.message };
+    console.error('Failed to refresh installed programs:', error)
+    return { success: false, error: error.message }
   }
-});
+})
 
 /* -------------------- External Games -------------------- */
 function loadExternalGames() {
-  const games = store.get('externalGames', []);
-  return Array.isArray(games) ? games : [];
+  const games = store.get('externalGames', [])
+  return Array.isArray(games) ? games : []
 }
 function saveExternalGames(games) {
-  cachedExternalGames = games;
-  store.set('externalGames', games);
+  cachedExternalGames = games
+  store.set('externalGames', games)
 }
-function buildExternalGameId(seed) { return `external_${crypto.createHash('sha1').update(seed).digest('hex')}`; }
-function normalizeExternalPayload(data={}) { return { title: data.name?.trim() || data.title?.trim() || 'External Program', installLocation: data.installLocation || null, displayIcon: data.displayIcon || null, executablePath: data.executablePath || null }; }
+function buildExternalGameId(seed) {
+  return `external_${crypto.createHash('sha1').update(seed).digest('hex')}`
+}
+function normalizeExternalPayload(data = {}) {
+  return {
+    title: data.name?.trim() || data.title?.trim() || 'External Program',
+    installLocation: data.installLocation || null,
+    displayIcon: data.displayIcon || null,
+    executablePath: data.executablePath || null,
+  }
+}
 function createExternalGameEntry(data) {
-  const payload = normalizeExternalPayload(data);
-  const executablePath = payload.executablePath || deriveExecutablePath(payload.displayIcon,payload.installLocation) || payload.installLocation;
-  const idSeed = executablePath || payload.title + Date.now().toString();
-  const id = buildExternalGameId(idSeed);
+  const payload = normalizeExternalPayload(data)
+  const executablePath =
+    payload.executablePath ||
+    deriveExecutablePath(payload.displayIcon, payload.installLocation) ||
+    payload.installLocation
+  const idSeed = executablePath || payload.title + Date.now().toString()
+  const id = buildExternalGameId(idSeed)
 
   return {
     id,
     title: payload.title,
     platform: 'external',
-    installLocation: payload.installLocation || (executablePath?path.dirname(executablePath):null),
+    installLocation:
+      payload.installLocation || (executablePath ? path.dirname(executablePath) : null),
     executablePath: executablePath || null,
     coverPath: payload.displayIcon || null,
     launchCommand: executablePath || payload.installLocation || null,
-  };
+  }
 }
 function upsertExternalGame(entry) {
-  const games = loadExternalGames();
-  const duplicateIndex = games.findIndex(game => {
-    if (game.executablePath && entry.executablePath) return game.executablePath.toLowerCase()===entry.executablePath.toLowerCase();
-    if (game.installLocation && entry.installLocation) return game.installLocation.toLowerCase()===entry.installLocation.toLowerCase();
-    return false;
-  });
+  const games = loadExternalGames()
+  const duplicateIndex = games.findIndex((game) => {
+    if (game.executablePath && entry.executablePath)
+      return game.executablePath.toLowerCase() === entry.executablePath.toLowerCase()
+    if (game.installLocation && entry.installLocation)
+      return game.installLocation.toLowerCase() === entry.installLocation.toLowerCase()
+    return false
+  })
 
-  if (duplicateIndex>-1) { games[duplicateIndex] = {...games[duplicateIndex], ...entry}; saveExternalGames(games); return games[duplicateIndex]; }
-  const updated = [...games, entry]; saveExternalGames(updated); return entry;
+  if (duplicateIndex > -1) {
+    games[duplicateIndex] = { ...games[duplicateIndex], ...entry }
+    saveExternalGames(games)
+    return games[duplicateIndex]
+  }
+  const updated = [...games, entry]
+  saveExternalGames(updated)
+  return entry
 }
 
 ipcMain.handle('add-external-program', async (event, program) => {
@@ -321,30 +346,42 @@ ipcMain.handle('add-external-program', async (event, program) => {
       displayIcon: program.displayIcon,
       executablePath: program.installLocation || program.displayIcon || null,
       platform: 'external',
-    };
+    }
 
-    const saved = upsertExternalGame(safeProgram);
-    return { success: true, game: saved };
+    const saved = upsertExternalGame(safeProgram)
+    return { success: true, game: saved }
   } catch (error) {
-    console.error('Failed to add external program:', error);
-    return { success: false, error: error.message };
+    console.error('Failed to add external program:', error)
+    return { success: false, error: error.message }
   }
-});
-
+})
 
 ipcMain.handle('select-portable-executable', async () => {
-  const result = await dialog.showOpenDialog({ title:'Select Portable Application', filters:[{name:'Executable',extensions:['exe']}], properties:['openFile'] });
-  if (result.canceled || !result.filePaths.length) return { canceled:true };
-  return { canceled:false, filePath:result.filePaths[0] };
-});
+  const result = await dialog.showOpenDialog({
+    title: 'Select Portable Application',
+    filters: [{ name: 'Executable', extensions: ['exe'] }],
+    properties: ['openFile'],
+  })
+  if (result.canceled || !result.filePaths.length) return { canceled: true }
+  return { canceled: false, filePath: result.filePaths[0] }
+})
 
-ipcMain.handle('add-external-executable', async (event,filePath)=>{
+ipcMain.handle('add-external-executable', async (event, filePath) => {
   try {
-    if(!filePath || !filePath.toLowerCase().endsWith('.exe') || !existsSync(filePath)) throw new Error('Executable path is invalid.');
-    const title = path.basename(filePath,path.extname(filePath));
-    const installLocation = path.dirname(filePath);
-    const entry = createExternalGameEntry({name:title,installLocation,executablePath:filePath,displayIcon:filePath});
-    const saved = upsertExternalGame(entry);
-    return { success:true, game:saved };
-  } catch(error){ console.error('Failed to add portable executable:',error); return { success:false, error:error.message }; }
-});
+    if (!filePath || !filePath.toLowerCase().endsWith('.exe') || !existsSync(filePath))
+      throw new Error('Executable path is invalid.')
+    const title = path.basename(filePath, path.extname(filePath))
+    const installLocation = path.dirname(filePath)
+    const entry = createExternalGameEntry({
+      name: title,
+      installLocation,
+      executablePath: filePath,
+      displayIcon: filePath,
+    })
+    const saved = upsertExternalGame(entry)
+    return { success: true, game: saved }
+  } catch (error) {
+    console.error('Failed to add portable executable:', error)
+    return { success: false, error: error.message }
+  }
+})

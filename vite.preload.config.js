@@ -1,18 +1,11 @@
-import { defineConfig } from 'vite';
-import { builtinModules } from 'module';
+import { defineConfig } from 'vite'
+import { builtinModules } from 'module'
 
-const externalDeps = [
-  'electron',
-  'fs/promises',
-];
+const externalDeps = ['electron', 'fs/promises']
 
 const external = [
-  ...new Set([
-    ...externalDeps,
-    ...builtinModules,
-    ...builtinModules.map((m) => `node:${m}`),
-  ]),
-];
+  ...new Set([...externalDeps, ...builtinModules, ...builtinModules.map((m) => `node:${m}`)]),
+]
 
 export default defineConfig({
   publicDir: false,
@@ -34,7 +27,4 @@ export default defineConfig({
       },
     },
   },
-});
-
-
-
+})

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getGames: () => ipcRenderer.invoke('get-games'),
@@ -11,7 +11,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addExternalProgram: (program) => ipcRenderer.invoke('add-external-program', program),
   pickPortableExecutable: () => ipcRenderer.invoke('select-portable-executable'),
   addExternalExecutable: (filePath) => ipcRenderer.invoke('add-external-executable', filePath),
-});
-
-
-
+})
