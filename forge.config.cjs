@@ -1,14 +1,18 @@
+const path = require('path');
 module.exports = {
   packagerConfig: {
     name: 'Empire',
     executableName: 'empire',
     asar: true,
+    icon: path.resolve(__dirname, 'assets/icon'),
   },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        setupIcon: path.resolve(__dirname, 'assets/icon.ico'),
+      },
     },
     {
       name: '@electron-forge/maker-zip',

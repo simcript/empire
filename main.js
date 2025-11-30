@@ -118,6 +118,7 @@ function createWindow() {
     maximizable: false,
     autoHideMenuBar: true,
     menuBarVisible: false,
+    icon: path.join(appRoot, 'assets', 'icon.ico'),
   })
   Menu.setApplicationMenu(null)
 

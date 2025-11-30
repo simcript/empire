@@ -76,6 +76,13 @@
         <p class="text-slate-400 text-sm mt-2">
           A modern Windows launcher that keeps Steam, Epic Games Store, and GOG Galaxy libraries
           together.
+          <a
+            href="https://simcript.github.io/empire/"
+            class="text-blue-400 text-sm inline-block hover:underline"
+            target="_blank"
+          >
+            more...
+          </a>
         </p>
       </div>
     </div>
